@@ -18,6 +18,8 @@ variable "nomad_binary" {}
 
 variable "root_block_device_size" {}
 
+variable "client_block_device_size" {}
+
 variable "whitelist_ip" {}
 
 variable "retry_join" {
@@ -207,7 +209,7 @@ resource "aws_instance" "client" {
   ebs_block_device {
     device_name           = "/dev/xvdd"
     volume_type           = "gp2"
-    volume_size           = "30"
+    volume_size           = var.client_block_device_size
     delete_on_termination = "true"
   }
 

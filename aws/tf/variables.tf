@@ -28,6 +28,11 @@ variable "root_block_device_size" {
   default     = 60
 }
 
+variable "client_block_device_size" {
+  description = "The volume size of the additional block device for cluster clients."
+  default     = 30
+}
+
 variable "key_name" {
   description = "Name of the SSH key used to provision EC2 instances."
 }

@@ -31,6 +31,10 @@ server_count         = "1"
 client_instance_type = "t3a.micro"
 client_count         = "1"
 
+# EBS volume size (optional) - Clients have an additional volume
+# root_block_device_size   = 60
+# client_block_device_size = 30
+
 # `whitelist_ip` (required) - IP to whitelist for the security groups (set
 # to 0.0.0.0/0 for world).  
 #  - If it is not provided here, it will be requested interactively.
