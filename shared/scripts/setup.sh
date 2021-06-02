@@ -37,7 +37,7 @@ CONSULTEMPLATECONFIGDIR=/etc/consul-template.d
 CONSULTEMPLATEDIR=/opt/consul-template
 
 # Dependencies
-cat /etc/apt/sources.list # For some reason, the package list is never updated and this fixes it
+sleep 10 # the package list fails to update right after boot
 sudo apt-get update
 sudo apt-get install -y software-properties-common
 sudo apt-get install -y unzip jq curl net-tools
