@@ -4,6 +4,7 @@ This project leverages [Hashicorp](https://www.hashicorp.com/) tools (known as t
 
 This repository is based on [Nomad's official repository setup](https://github.com/hashicorp/nomad/tree/main/terraform), but with a few key differences and objectives:
 
+- Integrating GlusterFS network filesystem with host volumes.
 - The base AMI Ubuntu version has been bumped from 16.04 to 20.04 and the setup has been adapted to it.
 - We are using the latest version of every binary (Nomad, Consul, Vault and [Consul Template](https://github.com/hashicorp/consul-template)).
 - We want to automate the ACL config and bootstraping process for all three components.
