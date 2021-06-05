@@ -32,6 +32,10 @@ variable "retry_join" {
   }
 }
 
+locals {
+  AZs = ["a", "b", "c"]
+}
+
 data "aws_vpc" "default" {
   default = true
 }
@@ -161,6 +165,7 @@ resource "aws_instance" "server" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.primary.id]
   count                  = var.server_count
+  availability_zone = "${var.region}${local.AZs[count.index % 3]}"
 
   # instance tags
   tags = merge(
@@ -188,6 +193,7 @@ resource "aws_instance" "client" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.primary.id]
   count                  = var.client_count
+  availability_zone = "${var.region}${local.AZs[count.index % 3]}"
   depends_on             = [aws_instance.server]
 
   # instance tags
