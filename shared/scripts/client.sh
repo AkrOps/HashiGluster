@@ -97,7 +97,7 @@ printf "\n\n\n $(date) - GLUSTER ENABLED AND STARTED\n\n\n"
 if [ ${#CONSUL_CLIENTS[@]} -le 3 ] # The setup is meant only for the first three nodes
 then
   sleep 10 # Wait for other nodes in case they are not ready
-  for i in ${OTHER_CONSUL_CLIENTS[*]}; do gluster peer probe $i; done
+  for i in ${OTHER_CONSUL_CLIENTS[*]}; do gluster peer probe $i || echo "$i already probed"; done
   gluster peer status # for user-data log diagnostics
   if [ ${CONSUL_CLIENTS[0]} = $(hostname) ] # A single node should run the following
   then
