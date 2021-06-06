@@ -57,8 +57,3 @@ variable "retry_join" {
     tag_value = "auto-join"
   }
 }
-
-variable "nomad_binary" {
-  description = "Used to replace the machine image installed Nomad binary."
-  default     = "none"
-}

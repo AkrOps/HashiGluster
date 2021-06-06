@@ -14,7 +14,6 @@ module "hashistack" {
   server_count             = var.server_count
   client_count             = var.client_count
   retry_join               = var.retry_join
-  nomad_binary             = var.nomad_binary
   root_block_device_size   = var.root_block_device_size
   client_block_device_size = var.client_block_device_size
   whitelist_ip             = var.whitelist_ip

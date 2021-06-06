@@ -14,8 +14,6 @@ variable "server_count" {}
 
 variable "client_count" {}
 
-variable "nomad_binary" {}
-
 variable "root_block_device_size" {}
 
 variable "client_block_device_size" {}
@@ -140,7 +138,6 @@ data "template_file" "user_data_server" {
         formatlist("%s=%s", keys(var.retry_join), values(var.retry_join)),
       ),
     )
-    nomad_binary = var.nomad_binary
   }
 }
 
@@ -155,7 +152,6 @@ data "template_file" "user_data_client" {
         formatlist("%s=%s ", keys(var.retry_join), values(var.retry_join)),
       ),
     )
-    nomad_binary = var.nomad_binary
   }
 }
 
