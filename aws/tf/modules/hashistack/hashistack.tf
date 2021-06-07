@@ -8,15 +8,21 @@ variable "server_instance_type" {}
 
 variable "client_instance_type" {}
 
+variable "gluster_instance_type" {}
+
 variable "key_name" {}
 
 variable "server_count" {}
 
 variable "client_count" {}
 
+variable "gluster_count" {}
+
 variable "root_block_device_size" {}
 
-variable "client_block_device_size" {}
+variable "gluster_block_device_size" {}
+
+variable "delete_gluster_vols_on_termination" {}
 
 variable "whitelist_ip" {}
 
@@ -155,6 +161,20 @@ data "template_file" "user_data_client" {
   }
 }
 
+data "template_file" "user_data_gluster" {
+  template = file("${path.root}/user-data-gluster.sh")
+
+  vars = {
+    region = var.region
+    retry_join = chomp(
+      join(
+        " ",
+        formatlist("%s=%s ", keys(var.retry_join), values(var.retry_join)),
+      ),
+    )
+  }
+}
+
 resource "aws_instance" "server" {
   ami                    = var.ami
   instance_type          = var.server_instance_type
@@ -176,7 +196,7 @@ resource "aws_instance" "server" {
   root_block_device {
     volume_type           = "gp2"
     volume_size           = var.root_block_device_size
-    delete_on_termination = "true"
+    delete_on_termination = true
   }
 
   user_data            = data.template_file.user_data_server.rendered
@@ -189,8 +209,8 @@ resource "aws_instance" "client" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.primary.id]
   count                  = var.client_count
-  availability_zone = "${var.region}${local.AZs[count.index % 3]}"
-  depends_on             = [aws_instance.server]
+  availability_zone      = "${var.region}${local.AZs[count.index % 3]}"
+  depends_on             = [aws_instance.server, aws_instance.gluster]
 
   # instance tags
   tags = merge(
@@ -205,17 +225,46 @@ resource "aws_instance" "client" {
   root_block_device {
     volume_type           = "gp2"
     volume_size           = var.root_block_device_size
-    delete_on_termination = "true"
+    delete_on_termination = var.delete_gluster_vols_on_termination
+  }
+
+  user_data            = data.template_file.user_data_client.rendered
+  iam_instance_profile = aws_iam_instance_profile.instance_profile.name
+}
+
+resource "aws_instance" "gluster" {
+  ami                    = var.ami
+  instance_type          = var.gluster_instance_type
+  key_name               = var.key_name
+  vpc_security_group_ids = [aws_security_group.primary.id]
+  count                  = var.gluster_count
+  availability_zone      = "${var.region}${local.AZs[count.index % 3]}"
+  depends_on             = [aws_instance.server]
+
+  # instance tags
+  tags = merge(
+    {
+      "Name" = "${var.name}-gluster-${count.index}"
+    },
+    {
+      "${var.retry_join.tag_key}" = "${var.retry_join.tag_value}"
+    },
+  )
+
+  root_block_device {
+    volume_type           = "gp2"
+    volume_size           = var.root_block_device_size
+    delete_on_termination = true
   }
 
   ebs_block_device {
     device_name           = "/dev/xvdd"
     volume_type           = "gp2"
-    volume_size           = var.client_block_device_size
-    delete_on_termination = "true"
+    volume_size           = var.gluster_block_device_size
+    delete_on_termination = true
   }
 
-  user_data            = data.template_file.user_data_client.rendered
+  user_data            = data.template_file.user_data_gluster.rendered
   iam_instance_profile = aws_iam_instance_profile.instance_profile.name
 }
 
@@ -287,6 +336,10 @@ output "server_public_ips" {
 
 output "client_public_ips" {
    value = aws_instance.client[*].public_ip
+}
+
+output "gluster_public_ips" {
+   value = aws_instance.gluster[*].public_ip
 }
 
 output "server_lb_ip" {

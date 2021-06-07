@@ -23,14 +23,23 @@ variable "client_instance_type" {
   default     = "t3a.medium"
 }
 
+variable "gluster_instance_type" {
+  description = "The AWS instance type to use for GlusterFS servers."
+  default     = "t3a.micro"
+}
+
 variable "root_block_device_size" {
   description = "The volume size of the root block device."
   default     = 60
 }
 
-variable "client_block_device_size" {
-  description = "The volume size of the additional block device for cluster clients."
+variable "gluster_block_device_size" {
+  description = "The size of the storage EBS volume for each GlusterFS server node."
   default     = 30
+}
+
+variable "delete_gluster_vols_on_termination" {
+  default     = false
 }
 
 variable "key_name" {
@@ -44,6 +53,11 @@ variable "server_count" {
 
 variable "client_count" {
   description = "The number of clients to provision."
+  default     = "3"
+}
+
+variable "gluster_count" {
+  description = "The number of GlusterFS nodes to provision."
   default     = "3"
 }
 

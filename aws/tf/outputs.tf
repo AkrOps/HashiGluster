@@ -1,9 +1,12 @@
 output "IP_Addresses" {
   value = <<CONFIGURATION
 
-Client public IPs: ${join(", ", module.hashistack.client_public_ips)}
+Server public IPs: ${join(" ", module.hashistack.server_public_ips)}
 
-Server public IPs: ${join(", ", module.hashistack.server_public_ips)}
+Client public IPs: ${join(" ", module.hashistack.client_public_ips)}
+
+GlusterFS public IPs: ${join(" ", module.hashistack.gluster_public_ips)}
+
 
 To connect, add your private key and SSH into any client or server with
 `ssh ubuntu@PUBLIC_IP`. You can test the integrity of the cluster by running:

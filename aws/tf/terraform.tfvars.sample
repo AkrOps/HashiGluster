@@ -26,9 +26,15 @@ server_count         = "1"
 client_instance_type = "t3a.micro"
 client_count         = "1"
 
-# EBS volume size (optional) - Clients have an additional volume
+# Gluster EBS volume size
 # root_block_device_size   = 60
-# client_block_device_size = 30
+
+# Gluster EBS volume size
+gluster_block_device_size = 60
+
+# Delete Gluster data storage volumes on termination - defaults to false
+# WARNING: false is highly recommended on production
+# delete_gluster_vols_on_termination = true
 
 # `whitelist_ip` (required) - IP to whitelist for the security groups (set
 # to 0.0.0.0/0 for world).  
