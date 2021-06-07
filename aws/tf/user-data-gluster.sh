@@ -18,7 +18,6 @@ sleep 10
 
 DOCKER_BRIDGE_IP_ADDRESS=(`ifconfig docker0 2>/dev/null | awk '/inet / {print $2}'`)
 RETRY_JOIN="${retry_join}"
-CONSUL_DOM=".node.dc1.consul"
 
 # Get IP address and AZ from metadata service
 IP_ADDRESS=$(curl http://$AWS_DATA_IP/latest/meta-data/local-ipv4)
@@ -41,6 +40,8 @@ sleep 10 # Wait for other Consul clients
 
 
 # Assemble arrays of GlusterFS servers (also Consul clients)
+DC=$(consul members | grep $(hostname) | awk '{ print $7 }') # Consul datacenter
+CONSUL_DOM=".node.$DC.consul"
 declare -a GLUSTER_NODES=()
 declare -a OTHER_GLUSTER_NODES=()
 for i in $(consul members | awk '/gs-/ {print $1}'); do GLUSTER_NODES+=($i$CONSUL_DOM); done

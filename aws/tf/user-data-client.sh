@@ -34,6 +34,8 @@ systemctl enable consul.service
 systemctl start consul.service
 sleep 10
 
+DC=$(consul members | grep $(hostname) | awk '{ print $7 }') # Consul datacenter
+GS=$(consul members | grep gs-$AZ | head -n 1 | awk '{ print $1 }' ) # Gluster server in same AZ
 
 # Nomad
 cp $CONFIGDIR/nomad_client.hcl $NOMADCONFIGDIR/nomad.hcl
@@ -66,7 +68,6 @@ echo "export NOMAD_ADDR=http://$IP_ADDRESS:4646" | tee --append /home/$HOME_DIR/
 
 
 # GlusterFS
-# apt update && apt install -y glusterfs-client
-# echo "$(hostname)$CDNS:/gv0 /mnt glusterfs defaults,_netdev 0 0" >> /etc/fstab
-# sleep 30
-# mount -a
+apt update && apt install -y glusterfs-client
+echo "$GS.node.$DC.consul:/gv0 /mnt glusterfs defaults,_netdev 0 0" >> /etc/fstab
+mount -a || (sleep 30 && mount -a)
