@@ -244,7 +244,7 @@ resource "aws_instance" "gluster" {
   # instance tags
   tags = merge(
     {
-      "Name" = "${var.name}-gluster-${count.index}"
+      Name = "${var.name}-gluster-${count.index}"
     },
     {
       "${var.retry_join.tag_key}" = "${var.retry_join.tag_value}"
@@ -257,15 +257,26 @@ resource "aws_instance" "gluster" {
     delete_on_termination = true
   }
 
-  ebs_block_device {
-    device_name           = "/dev/xvdd"
-    volume_type           = "gp2"
-    volume_size           = var.gluster_block_device_size
-    delete_on_termination = true
-  }
-
   user_data            = data.template_file.user_data_gluster.rendered
   iam_instance_profile = aws_iam_instance_profile.instance_profile.name
+}
+
+resource "aws_ebs_volume" "gluster" {
+  count             = var.gluster_count
+  availability_zone = "${var.region}${local.AZs[count.index % 3]}"
+  type              = "gp2"
+  size              = var.gluster_block_device_size
+
+  tags = {
+    Name = "${var.name}-gluster-${count.index}"
+  }
+}
+
+resource "aws_volume_attachment" "gluster" {
+  count       = var.gluster_count
+  device_name = "/dev/xvdd"
+  volume_id   = aws_ebs_volume.gluster[count.index].id
+  instance_id = aws_instance.gluster[count.index].id
 }
 
 resource "aws_iam_instance_profile" "instance_profile" {
