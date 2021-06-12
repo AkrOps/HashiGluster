@@ -64,6 +64,14 @@ resource "aws_security_group" "server_lb" {
     cidr_blocks = [var.whitelist_ip]
   }
 
+  # Vault
+  ingress {
+    from_port   = 8200
+    to_port     = 8200
+    protocol    = "tcp"
+    cidr_blocks = [var.whitelist_ip]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -108,7 +116,16 @@ resource "aws_security_group" "primary" {
     cidr_blocks     = [var.whitelist_ip]
     security_groups = [aws_security_group.server_lb.id]
   }
-  
+
+  # Vault
+  ingress {
+    from_port       = 8200
+    to_port         = 8200
+    protocol        = "tcp"
+    cidr_blocks     = [var.whitelist_ip]
+    security_groups = [aws_security_group.server_lb.id]
+  }
+
   # Nginx
   ingress {
     from_port       = 80
@@ -326,18 +343,28 @@ resource "aws_elb" "server_lb" {
   availability_zones = distinct(aws_instance.server.*.availability_zone)
   internal           = false
   instances          = aws_instance.server.*.id
+
   listener {
     instance_port     = 4646
     instance_protocol = "http"
     lb_port           = 4646
     lb_protocol       = "http"
   }
+
   listener {
     instance_port     = 8500
     instance_protocol = "http"
     lb_port           = 8500
     lb_protocol       = "http"
   }
+
+  listener {
+    instance_port     = 8200
+    instance_protocol = "http"
+    lb_port           = 8200
+    lb_protocol       = "http"
+  }
+
   security_groups = [aws_security_group.server_lb.id]
 }
 
