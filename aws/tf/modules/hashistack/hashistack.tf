@@ -211,7 +211,7 @@ resource "aws_instance" "server" {
   )
 
   root_block_device {
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     volume_size           = var.root_block_device_size
     delete_on_termination = true
   }
@@ -240,7 +240,7 @@ resource "aws_instance" "client" {
   )
 
   root_block_device {
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     volume_size           = var.root_block_device_size
     delete_on_termination = var.delete_gluster_vols_on_termination
   }
@@ -269,7 +269,7 @@ resource "aws_instance" "gluster" {
   )
 
   root_block_device {
-    volume_type           = "gp2"
+    volume_type           = "gp3"
     volume_size           = var.root_block_device_size
     delete_on_termination = true
   }
@@ -281,7 +281,7 @@ resource "aws_instance" "gluster" {
 resource "aws_ebs_volume" "gluster" {
   count             = var.gluster_count
   availability_zone = "${var.region}${local.AZs[count.index % 3]}"
-  type              = "gp2"
+  type              = "gp3"
   size              = var.gluster_block_device_size
 
   tags = {
