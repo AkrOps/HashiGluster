@@ -8,7 +8,7 @@ backend "consul" {
 }
 
 listener "tcp" {
-  address         = "0.0.0.0:8200"
+  address         = "IP_ADDRESS:8200"
   cluster_address = "IP_ADDRESS:8200"
   tls_disable     = 1
 }

@@ -1,7 +1,7 @@
 data_dir = "/opt/consul/data"
 
-bind_addr = "0.0.0.0"
-client_addr = "0.0.0.0"
+bind_addr = "IP_ADDRESS"
+client_addr = "IP_ADDRESS"
 advertise_addr = "IP_ADDRESS"
 
 retry_join = ["RETRY_JOIN"]
