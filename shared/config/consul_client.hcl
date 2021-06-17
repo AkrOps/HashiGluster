@@ -8,4 +8,6 @@ retry_join = ["RETRY_JOIN"]
 
 log_level = "INFO"
 
-ui = true
+ui_config {
+  enabled = true
+}
