@@ -1,15 +1,24 @@
-# Provision a production HashiStack cluster in the cloud
+# HashiGluster
 
-This project leverages [Hashicorp](https://www.hashicorp.com/) tools (known as the Hashicorp stack or HashiStack) in order to provision a production-ready [Nomad](https://www.nomadproject.io/), [Consul](https://www.consul.io) and [Vault](https://www.vaultproject.io) cluster in the cloud using [Packer](https://packer.io) and [Terraform](https://terraform.io).
+## Introduction
 
-This repository is based on [Nomad's official repository setup](https://github.com/hashicorp/nomad/tree/main/terraform), but with a few key differences and objectives:
+This project aims at provisioning a production-ready [Nomad](https://www.nomadproject.io/), [Consul](https://www.consul.io) and [Vault](https://www.vaultproject.io) cluster in the cloud, combined with a [GlusterFS](https://docs.gluster.org/en/latest/) cluster in order to provide shared, highly available storage for stateful workloads.
 
-- Integrating GlusterFS network filesystem with host volumes.
-- The base AMI Ubuntu version has been bumped from 16.04 to 20.04 and the setup has been adapted to it.
-- We are using the latest version of every binary (Nomad, Consul, Vault and [Consul Template](https://github.com/hashicorp/consul-template)).
-- We want to automate the ACL config and bootstraping process for all three components.
-- The setup is focused on AWS only. We will later attempt to replicate the setup in Hetzner Cloud.
-- We are aiming at a more robust and modern AWS setup, e.g. by allowing to deploy in a specific VPC and replacing the AWS Classic ELB with an ALB.
+All infrastructure is kept as code and provisioned using [Terraform](https://terraform.io), and base AMIs are built using [Packer](https://packer.io) 
+
+The project started as an attempt of updating [Nomad's official repository AWS setup](https://github.com/hashicorp/nomad/tree/main/terraform).
+
+## Key features and objectives:
+
+- Integrating GlusterFS network filesystem with host volumes for stateful workloads.
+- Keeping the base AMI at the latest LTS Ubuntu version and adapting the setup to it.
+- Using the latest version of every binary (Nomad, Consul, Vault and [Consul Template](https://github.com/hashicorp/consul-template)).
+- Automating the process of securing Consul gossip communication with symmetric encryption.
+- Securing Consul agent communication with TLS, automating both the initial bootstrap process for servers and the addition of every new client.
+- Automating the ACL config and bootstraping process for Nomad and Consul and then managing all tokens with Vault.
+- Provisioning the cluster in private subnets of a specific VPC.
+- Replacing the AWS Classic ELB with an ALB.
+- Restricting ssh access to nodes to a VPN.
 
 ## Provision a cluster
 
