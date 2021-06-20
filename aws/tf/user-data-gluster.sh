@@ -13,20 +13,24 @@ NOMADCONFIGDIR=/etc/nomad.d
 HOME_DIR=ubuntu
 AWS_DATA_IP=169.254.169.254
 
+
 # Wait for network
 sleep 10
 
 DOCKER_BRIDGE_IP_ADDRESS=(`ifconfig docker0 2>/dev/null | awk '/inet / {print $2}'`)
 RETRY_JOIN="${retry_join}"
 
+
 # Get IP address and AZ from metadata service
 IP_ADDRESS=$(curl http://$AWS_DATA_IP/latest/meta-data/local-ipv4)
 AZ=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone/ | grep -o '.$')
+
 
 # Adapt the hostname to our naming convention
 NEW_HOSTNAME="gs-$AZ-$(hostname | grep -Po '\d+\-\d+$')"
 hostname $NEW_HOSTNAME
 hostnamectl set-hostname $NEW_HOSTNAME
+
 
 # Consul
 sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $CONFIGDIR/consul_client.hcl
@@ -54,8 +58,9 @@ CLUSTER_SIZE=$${#GLUSTER_NODES[@]}
 echo "127.0.0.1 $(hostname)" | tee --append /etc/hosts
 
 
-# Add Docker bridge network IP to /etc/resolv.conf (at the top)
+# Add Docker bridge network IP and AWS DNS to /etc/resolv.conf (at the top)
 echo "nameserver $DOCKER_BRIDGE_IP_ADDRESS" | tee /etc/resolv.conf.new
+echo "nameserver 169.254.169.253" | tee -a /etc/resolv.conf.new
 cat /etc/resolv.conf | tee --append /etc/resolv.conf.new
 mv /etc/resolv.conf.new /etc/resolv.conf
 
@@ -77,7 +82,6 @@ systemctl enable glusterd.service && systemctl start glusterd.service
 sleep 10 # Wait for other nodes in case they are not ready
 for i in $${OTHER_GLUSTER_NODES[*]}; do gluster peer probe $i || echo "$i already probed"; done
 gluster peer status # for user-data log diagnostics
-
 
 if [ $(echo $${GLUSTER_NODES[0]} | grep "^$(hostname)") ] # A single node should run the following
 then

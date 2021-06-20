@@ -56,8 +56,9 @@ cp $CONFIGDIR/consul-template.service /etc/systemd/system/consul-template.servic
 echo "127.0.0.1 $(hostname)" | tee --append /etc/hosts
 
 
-# Add Docker bridge network IP to /etc/resolv.conf (at the top)
+# Add Docker bridge network IP and AWS DNS to /etc/resolv.conf (at the top)
 echo "nameserver $DOCKER_BRIDGE_IP_ADDRESS" | tee /etc/resolv.conf.new
+echo "nameserver 169.254.169.253" | tee -a /etc/resolv.conf.new
 cat /etc/resolv.conf | tee --append /etc/resolv.conf.new
 mv /etc/resolv.conf.new /etc/resolv.conf
 

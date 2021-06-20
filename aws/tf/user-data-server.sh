@@ -13,6 +13,7 @@ CONSULTEMPLATECONFIGDIR=/etc/consul-template.d
 HOME_DIR=ubuntu
 AWS_DATA_IP=169.254.169.254
 
+
 # Wait for network
 sleep 15
 
@@ -23,6 +24,7 @@ RETRY_JOIN="${retry_join}"
 
 # Get IP from metadata service
 IP_ADDRESS=$(curl http://$AWS_DATA_IP/latest/meta-data/local-ipv4)
+
 
 # Consul
 sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $CONFIGDIR/consul.hcl
@@ -37,6 +39,7 @@ sleep 10
 export CONSUL_HTTP_ADDR=$IP_ADDRESS:8500
 export CONSUL_RPC_ADDR=$IP_ADDRESS:8400
 
+
 # Vault
 sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $CONFIGDIR/vault.hcl
 cp $CONFIGDIR/vault.hcl $VAULTCONFIGDIR
@@ -44,6 +47,7 @@ cp $CONFIGDIR/vault.service /etc/systemd/system/vault.service
 
 systemctl enable vault.service
 systemctl start vault.service
+
 
 # Nomad
 
@@ -64,19 +68,22 @@ systemctl start nomad.service
 sleep 10
 export NOMAD_ADDR=http://$IP_ADDRESS:4646
 
+
 # Consul Template
 cp $CONFIGDIR/consul-template.hcl $CONSULTEMPLATECONFIGDIR/consul-template.hcl
 cp $CONFIGDIR/consul-template.service /etc/systemd/system/consul-template.service
 
-# Add hostname to /etc/hosts
 
+# Add hostname to /etc/hosts
 echo "127.0.0.1 $(hostname)" | tee --append /etc/hosts
 
-# Add Docker bridge network IP to /etc/resolv.conf (at the top)
 
+# Add Docker bridge network IP and AWS DNS to /etc/resolv.conf (at the top)
 echo "nameserver $DOCKER_BRIDGE_IP_ADDRESS" | tee /etc/resolv.conf.new
+echo "nameserver 169.254.169.253" | tee -a /etc/resolv.conf.new
 cat /etc/resolv.conf | tee --append /etc/resolv.conf.new
 mv /etc/resolv.conf.new /etc/resolv.conf
+
 
 # Set env vars for tool CLIs
 echo "export CONSUL_RPC_ADDR=$IP_ADDRESS:8400" | tee --append /home/$HOME_DIR/.bashrc
