@@ -11,6 +11,7 @@ The project started as an attempt of updating [Nomad's official repository AWS s
 ## Key features and objectives:
 
 - Integrating GlusterFS network filesystem with host volumes for stateful workloads.
+- Ensuring an even distribution of servers, clients and GlusterFS servers across AZs.
 - Keeping the base AMI at the latest LTS Ubuntu version and adapting the setup to it.
 - Using the latest version of every binary (Nomad, Consul, Vault and [Consul Template](https://github.com/hashicorp/consul-template)).
 - Automating the process of securing Consul gossip communication with symmetric encryption.
