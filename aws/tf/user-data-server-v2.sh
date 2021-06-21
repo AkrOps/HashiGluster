@@ -9,12 +9,15 @@ set -e
 
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
+printf "\n\nSTARTING AT $(date)\n\n"
+
 CONFIGDIR=/ops/shared/config
 
 CONSULCONFIGDIR=/etc/consul.d
 VAULTCONFIGDIR=/etc/vault.d
 NOMADCONFIGDIR=/etc/nomad.d
 CONSULTEMPLATECONFIGDIR=/etc/consul-template.d
+CONSULSHAREDDIR=/mnt/consul-shared
 HOME_DIR=ubuntu
 AWS_DATA_IP=169.254.169.254
 AWS_DNS=169.254.169.253
@@ -44,14 +47,17 @@ hostnamectl set-hostname $NEW_HOSTNAME
 sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $CONFIGDIR/consul.hcl
 sed -i "s/SERVER_COUNT/$SERVER_COUNT/g" $CONFIGDIR/consul.hcl
 sed -i "s/RETRY_JOIN/$RETRY_JOIN/g" $CONFIGDIR/consul.hcl
+
 cp $CONFIGDIR/consul.hcl $CONSULCONFIGDIR
 cp $CONFIGDIR/consul_aws.service /etc/systemd/system/consul.service
 
 systemctl enable consul.service
 systemctl start consul.service
-sleep 10
+
 export CONSUL_HTTP_ADDR=$IP_ADDRESS:8500
 export CONSUL_RPC_ADDR=$IP_ADDRESS:8400
+
+sleep 15
 
 
 # Assemble arrays of GlusterFS servers (also Consul clients)
@@ -142,9 +148,18 @@ then
   gluster volume start gv0
   gluster volume info # for user-data log diagnostics
   mount -t glusterfs "$NEW_HOSTNAME:/gv0" /mnt
-  echo hola > /mnt/hola
+  mkdir $CONSULSHAREDDIR
+  GOSSIP_ENCRYPTION_KEY=$(consul keygen)
+  printf "\n\n$GOSSIP_ENCRYPTION_KEY\n$CONFIGDIR\n$CONSULCONFIGDIR\n$CONSULSHAREDDIR\n\n"
+  sed -i "s@GOSSIP_ENCRYPTION_KEY@$GOSSIP_ENCRYPTION_KEY@g" $CONFIGDIR/consul_gossip_encrypt.hcl
+  cp $CONFIGDIR/consul_gossip_encrypt.hcl $CONSULSHAREDDIR
+  cp $CONFIGDIR/consul_gossip_encrypt.hcl $CONSULCONFIGDIR
+  systemctl restart consul
 else
   sleep 15
+  mount -t glusterfs "$NEW_HOSTNAME:/gv0" /mnt
+  cp $CONSULSHAREDDIR/consul_gossip_encrypt.hcl $CONSULCONFIGDIR
+  systemctl restart consul
 fi
 
 
