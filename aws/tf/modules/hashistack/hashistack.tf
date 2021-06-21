@@ -150,7 +150,7 @@ resource "aws_security_group" "primary" {
 }
 
 data "template_file" "user_data_server" {
-  template = file("${path.root}/user-data-server.sh")
+  template = file("${path.root}/user-data-server-v2.sh")
 
   vars = {
     server_count = var.server_count
@@ -279,7 +279,7 @@ resource "aws_instance" "gluster" {
 }
 
 resource "aws_ebs_volume" "gluster" {
-  count             = var.gluster_count
+  count             = var.server_count
   availability_zone = "${var.region}${local.AZs[count.index % 3]}"
   type              = "gp3"
   size              = var.gluster_block_device_size
@@ -290,10 +290,10 @@ resource "aws_ebs_volume" "gluster" {
 }
 
 resource "aws_volume_attachment" "gluster" {
-  count       = var.gluster_count
+  count       = var.server_count
   device_name = "/dev/xvdd"
   volume_id   = aws_ebs_volume.gluster[count.index].id
-  instance_id = aws_instance.gluster[count.index].id
+  instance_id = aws_instance.server[count.index].id
 }
 
 resource "aws_iam_instance_profile" "instance_profile" {
