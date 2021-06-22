@@ -150,7 +150,7 @@ resource "aws_security_group" "primary" {
 }
 
 data "template_file" "user_data_server" {
-  template = file("${path.root}/user-data-server-v2.sh")
+  template = file("${path.root}/scripts/user-data-server-v2.sh")
 
   vars = {
     server_count = var.server_count
@@ -165,7 +165,7 @@ data "template_file" "user_data_server" {
 }
 
 data "template_file" "user_data_client" {
-  template = file("${path.root}/user-data-client.sh")
+  template = file("${path.root}/scripts/user-data-client.sh")
 
   vars = {
     region = var.region
@@ -179,7 +179,7 @@ data "template_file" "user_data_client" {
 }
 
 data "template_file" "user_data_gluster" {
-  template = file("${path.root}/user-data-gluster.sh")
+  template = file("${path.root}/scripts/user-data-gluster.sh")
 
   vars = {
     region = var.region
