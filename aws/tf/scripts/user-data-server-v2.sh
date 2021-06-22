@@ -150,7 +150,6 @@ then
   mount -t glusterfs "$NEW_HOSTNAME:/gv0" /mnt
   mkdir $CONSULSHAREDDIR
   GOSSIP_ENCRYPTION_KEY=$(consul keygen)
-  printf "\n\n$GOSSIP_ENCRYPTION_KEY\n$CONFIGDIR\n$CONSULCONFIGDIR\n$CONSULSHAREDDIR\n\n"
   sed -i "s@GOSSIP_ENCRYPTION_KEY@$GOSSIP_ENCRYPTION_KEY@g" $CONFIGDIR/consul_gossip_encrypt.hcl
   cp $CONFIGDIR/consul_gossip_encrypt.hcl $CONSULSHAREDDIR
   cp $CONFIGDIR/consul_gossip_encrypt.hcl $CONSULCONFIGDIR
