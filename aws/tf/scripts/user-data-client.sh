@@ -11,6 +11,7 @@ NOMADCONFIGDIR=/etc/nomad.d
 CONSULTEMPLATECONFIGDIR=/etc/consul-template.d
 CONSULSHAREDDIR=/mnt/consul-shared
 HOME_DIR=ubuntu
+NET_IFACE=$(ls /sys/class/net/ | grep -P '(^ens\d$|^eth\d$)' | head -n 1)
 AWS_DATA_IP=169.254.169.254
 
 sleep 20 # Wait for network
@@ -36,7 +37,7 @@ systemctl start consul.service
 sleep 10
 
 DC=$(consul members | grep $(hostname) | awk '{ print $7 }') # Consul datacenter
-GS=$(consul members | grep hg-s-$AZ | head -n 1 | awk '{ print $1 }' ) # Gluster and HashiStack server in same AZ
+GLUSTER_NODE_IP=$(consul members | grep hg-s-$AZ | head -n 1 | awk '{ print $2 }' | sed -E 's/:.+$//' )
 
 # Nomad
 cp $CONFIGDIR/nomad_client.hcl $NOMADCONFIGDIR/nomad.hcl
@@ -71,8 +72,13 @@ echo "export NOMAD_ADDR=http://$IP_ADDRESS:4646" | tee --append /home/$HOME_DIR/
 
 # GlusterFS
 apt update && apt install -y glusterfs-client
-echo "$GS.node.$DC.consul:/gv0 /mnt glusterfs defaults,_netdev 0 0" >> /etc/fstab
-mount -a || (sleep 40 && mount -a)
+echo "$GLUSTER_NODE_IP:/gv0 /mnt glusterfs defaults,_netdev 0 0" >> /etc/fstab
+while ! mount -a; do sleep 10; done # Retrying GlusterFS mount forever
+
+# Fix Gluster fs not mounting on clients after reboot (depends on networking)
+sed -i "s/NET_IFACE/$NET_IFACE/g" $CONFIGDIR/rc.local
+cp $CONFIGDIR/rc.local /etc/rc.local
+chmod 740 /etc/rc.local
 
 # Copy common config for gossip encryption from GlusterFS volume
 cp $CONSULSHAREDDIR/consul_gossip_encrypt.hcl $CONSULCONFIGDIR

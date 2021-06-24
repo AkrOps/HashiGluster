@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Fix Gluster fs not mounting on clients after reboot (depends on networking)
+
+printf "\nREBOOT - $(date)\n" >> /var/log/gluster-volume-mount.log
+
+while ! ifconfig NET_IFACE | grep -P 'inet (\d+\.){3}\d+'; do
+  printf 'Waiting for network...\n' >> /var/log/gluster-volume-mount.log
+  sleep 1
+done
+
+while ! mount | grep gv0; do
+  mount -a || echo 'Retrying mount...\n' >> /var/log/gluster-volume-mount.log
+  sleep 1
+done
+
+printf "\nGluster fs mounted successfully! - $(date)\n" >> /var/log/gluster-volume-mount.log
+
+exit 0
