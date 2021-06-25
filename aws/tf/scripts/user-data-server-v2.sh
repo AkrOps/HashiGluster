@@ -60,16 +60,12 @@ export CONSUL_RPC_ADDR=$IP_ADDRESS:8400
 sleep 15
 
 
-# Assemble arrays of GlusterFS servers (also Consul clients)
-DC=$(consul members | grep $(hostname) | awk '{ print $7 }') # Consul datacenter
-CONSUL_DOM=".node.$DC.consul"
+# Assemble arrays of Consul servers IPs (also GlusterFS servers)
 declare -a SERVERS=()
-declare -a OTHER_SERVERS=()
-for i in $(consul members | awk '/hg-s-/ {print $1}'); do SERVERS+=($i$CONSUL_DOM); done
-for i in $(consul members | grep -v $(hostname) | awk '/hg-s-/ {print $1}')
-  do OTHER_SERVERS+=($i$CONSUL_DOM)
+for IP in $(consul members | grep server | awk '{ print $2 }' | sed -E 's/:.+$//')
+  do SERVERS+=($IP)
 done
-CLUSTER_SIZE=$${#SERVERS[@]}
+SERVER_CLUSTER_SIZE=$${#SERVERS[@]}
 
 # Add hostname to /etc/hosts
 echo "127.0.0.1 $(hostname)" | tee --append /etc/hosts
@@ -138,12 +134,22 @@ apt update && apt install -y glusterfs-server
 systemctl enable glusterd.service && systemctl start glusterd.service
 
 sleep 15 # Wait for other nodes in case they are not ready
-for i in $${OTHER_SERVERS[*]}; do gluster peer probe $i || echo "$i already probed"; done
+if [ $${SERVERS[0]} == $IP_ADDRESS ]
+then
+  for ((i=1; i<$SERVER_CLUSTER_SIZE; i++))
+    do gluster peer probe $${SERVERS[$i]} || echo "$${SERVERS[$i]} already probed"
+  done
+elif [ $${SERVERS[1]} == $IP_ADDRESS ]
+then
+  gluster peer probe $${SERVERS[0]} || echo "$${SERVERS[$i]} already probed"
+fi
+
+sleep 15 # Give the chance for nodes to probe peers
 gluster peer status # for user-data log diagnostics
 
-if [ $(echo $${SERVERS[0]} | grep "^$(hostname)") ] # A single node should run the following
+if [ $${SERVERS[0]} == $IP_ADDRESS ] # Only the "first" node (in AZ a) should run the following
 then
-  gluster volume create gv0 replica $CLUSTER_SIZE \
+  gluster volume create gv0 replica $SERVER_CLUSTER_SIZE \
     $(for i in $${SERVERS[@]}; do echo "$i:/data/brick1/gv0 "; done)
   gluster volume start gv0
   gluster volume info # for user-data log diagnostics
@@ -165,4 +171,3 @@ fi
 # Mount GlusterFS volume
 echo "$NEW_HOSTNAME:/gv0 /mnt glusterfs defaults,_netdev 0 0" >> /etc/fstab
 mount -a || (sleep 30 && mount -a)
-
