@@ -8,21 +8,29 @@ variable "server_instance_type" {}
 
 variable "client_instance_type" {}
 
-variable "gluster_instance_type" {}
-
 variable "key_name" {}
 
 variable "server_count" {}
 
 variable "client_count" {}
 
-variable "gluster_count" {}
+variable "server_root_ebs_size" {}
 
-variable "root_block_device_size" {}
+variable "client_root_ebs_size" {}
 
-variable "gluster_block_device_size" {}
+variable "gluster_ebs_size" {}
 
-variable "delete_gluster_vols_on_termination" {}
+variable "delete_gluster_vols_on_termination" {
+  default = false
+}
+
+variable "delete_server_root_vols_on_termination" {
+  default = true
+}
+
+variable "delete_client_root_vols_on_termination" {
+  default = true
+}
 
 variable "whitelist_ip" {}
 
@@ -178,20 +186,6 @@ data "template_file" "user_data_client" {
   }
 }
 
-data "template_file" "user_data_gluster" {
-  template = file("${path.root}/scripts/user-data-gluster.sh")
-
-  vars = {
-    region = var.region
-    retry_join = chomp(
-      join(
-        " ",
-        formatlist("%s=%s ", keys(var.retry_join), values(var.retry_join)),
-      ),
-    )
-  }
-}
-
 resource "aws_instance" "server" {
   ami                    = var.ami
   instance_type          = var.server_instance_type
@@ -212,8 +206,8 @@ resource "aws_instance" "server" {
 
   root_block_device {
     volume_type           = "gp3"
-    volume_size           = var.root_block_device_size
-    delete_on_termination = true
+    volume_size           = var.server_root_ebs_size
+    delete_on_termination = var.delete_server_root_vols_on_termination
   }
 
   user_data            = data.template_file.user_data_server.rendered
@@ -227,7 +221,7 @@ resource "aws_instance" "client" {
   vpc_security_group_ids = [aws_security_group.primary.id]
   count                  = var.client_count
   availability_zone      = "${var.region}${local.AZs[count.index % 3]}"
-  depends_on             = [aws_instance.server, aws_instance.gluster]
+  depends_on             = [aws_instance.server]
 
   # instance tags
   tags = merge(
@@ -241,40 +235,11 @@ resource "aws_instance" "client" {
 
   root_block_device {
     volume_type           = "gp3"
-    volume_size           = var.root_block_device_size
-    delete_on_termination = var.delete_gluster_vols_on_termination
+    volume_size           = var.client_root_ebs_size
+    delete_on_termination = var.delete_client_root_vols_on_termination
   }
 
   user_data            = data.template_file.user_data_client.rendered
-  iam_instance_profile = aws_iam_instance_profile.instance_profile.name
-}
-
-resource "aws_instance" "gluster" {
-  ami                    = var.ami
-  instance_type          = var.gluster_instance_type
-  key_name               = var.key_name
-  vpc_security_group_ids = [aws_security_group.primary.id]
-  count                  = var.gluster_count
-  availability_zone      = "${var.region}${local.AZs[count.index % 3]}"
-  depends_on             = [aws_instance.server]
-
-  # instance tags
-  tags = merge(
-    {
-      Name = "${var.name}-gluster-${count.index}"
-    },
-    {
-      "${var.retry_join.tag_key}" = "${var.retry_join.tag_value}"
-    },
-  )
-
-  root_block_device {
-    volume_type           = "gp3"
-    volume_size           = var.root_block_device_size
-    delete_on_termination = true
-  }
-
-  user_data            = data.template_file.user_data_gluster.rendered
   iam_instance_profile = aws_iam_instance_profile.instance_profile.name
 }
 
@@ -282,7 +247,7 @@ resource "aws_ebs_volume" "gluster" {
   count             = var.server_count
   availability_zone = "${var.region}${local.AZs[count.index % 3]}"
   type              = "gp3"
-  size              = var.gluster_block_device_size
+  size              = var.gluster_ebs_size
 
   tags = {
     Name = "${var.name}-gluster-${count.index}"
@@ -374,10 +339,6 @@ output "server_public_ips" {
 
 output "client_public_ips" {
    value = aws_instance.client[*].public_ip
-}
-
-output "gluster_public_ips" {
-   value = aws_instance.gluster[*].public_ip
 }
 
 output "server_lb_ip" {

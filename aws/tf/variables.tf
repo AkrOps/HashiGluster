@@ -23,19 +23,19 @@ variable "client_instance_type" {
   default     = "t3a.medium"
 }
 
-variable "gluster_instance_type" {
-  description = "The AWS instance type to use for GlusterFS servers."
-  default     = "t3a.micro"
-}
-
-variable "root_block_device_size" {
+variable "server_root_ebs_size" {
   description = "The volume size of the root block device."
   default     = 60
 }
 
-variable "gluster_block_device_size" {
+variable "client_root_ebs_size" {
+  description = "The volume size of the root block device."
+  default     = 20
+}
+
+variable "gluster_ebs_size" {
   description = "The size of the storage EBS volume for each GlusterFS server node."
-  default     = 30
+  default     = 100
 }
 
 variable "delete_gluster_vols_on_termination" {

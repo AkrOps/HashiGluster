@@ -26,11 +26,14 @@ server_count         = "1"
 client_instance_type = "t3a.micro"
 client_count         = "1"
 
-# Gluster EBS volume size
-# root_block_device_size   = 60
+# Server root EBS volume size
+# server_root_ebs_size   = 60
+
+# Client root EBS volume size
+# client_root_ebs_size   = 20
 
 # Gluster EBS volume size
-gluster_block_device_size = 60
+gluster_ebs_size = 60
 
 # Delete Gluster data storage volumes on termination - defaults to false
 # WARNING: false is highly recommended on production
