@@ -2,9 +2,14 @@
 Description=Vault Agent
 Requires=network-online.target
 After=network-online.target
+StartLimitIntervalSec=0
+# Consul is Vault's backend (store)
+Wants=consul.service
+After=consul.service
 
 [Service]
-Restart=on-failure
+Restart=always
+RestartSec=7
 Environment=GOMAXPROCS=nproc
 ExecStart=/usr/local/bin/vault server -config="/etc/vault.d/vault.hcl"
 ExecReload=/bin/kill -HUP $MAINPID
