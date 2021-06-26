@@ -4,6 +4,8 @@ set -e
 
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
+printf "\n\nSTARTING AT $(date)\n\n"
+
 CONFIGDIR=/ops/shared/config
 
 CONSULCONFIGDIR=/etc/consul.d
@@ -81,5 +83,6 @@ cp $CONFIGDIR/rc.local /etc/rc.local
 chmod 740 /etc/rc.local
 
 # Copy common config for gossip encryption from GlusterFS volume
+sleep 5 # in rare ocasions files hadn't been copied to the Gluster volume
 cp $CONSULSHAREDDIR/consul_gossip_encrypt.hcl $CONSULCONFIGDIR
 systemctl restart consul
