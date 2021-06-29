@@ -11,13 +11,14 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
 printf "\n\nSTARTING AT $(date)\n\n"
 
-CONFIGDIR=/ops/shared/config
+OPS_CONFIG_DIR=/ops/shared/config
 
-CONSULCONFIGDIR=/etc/consul.d
-VAULTCONFIGDIR=/etc/vault.d
-NOMADCONFIGDIR=/etc/nomad.d
-CONSULTEMPLATECONFIGDIR=/etc/consul-template.d
-CONSULSHAREDDIR=/mnt/consul-shared
+CONSUL_CONFIG_DIR=/etc/consul.d
+VAULT_CONFIG_DIR=/etc/vault.d
+NOMAD_CONFIG_DIR=/etc/nomad.d
+CONSULTEMPLATE_CONFIG_DIR=/etc/consul-template.d
+GLUSTER_MOUNT_DIR=/mnt/gluster
+CONSUL_SHARED_DIR=$GLUSTER_MOUNT_DIR/consul-shared
 HOME_DIR=ubuntu
 AWS_DATA_IP=169.254.169.254
 AWS_DNS=169.254.169.253
@@ -44,12 +45,12 @@ hostnamectl set-hostname $NEW_HOSTNAME
 
 
 # Consul
-sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $CONFIGDIR/consul.hcl
-sed -i "s/SERVER_COUNT/$SERVER_COUNT/g" $CONFIGDIR/consul.hcl
-sed -i "s/RETRY_JOIN/$RETRY_JOIN/g" $CONFIGDIR/consul.hcl
+sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $OPS_CONFIG_DIR/consul.hcl
+sed -i "s/SERVER_COUNT/$SERVER_COUNT/g" $OPS_CONFIG_DIR/consul.hcl
+sed -i "s/RETRY_JOIN/$RETRY_JOIN/g" $OPS_CONFIG_DIR/consul.hcl
 
-cp $CONFIGDIR/consul.hcl $CONSULCONFIGDIR
-cp $CONFIGDIR/consul_aws.service /etc/systemd/system/consul.service
+cp $OPS_CONFIG_DIR/consul.hcl $CONSUL_CONFIG_DIR
+cp $OPS_CONFIG_DIR/consul_aws.service /etc/systemd/system/consul.service
 
 systemctl enable consul.service
 systemctl start consul.service
@@ -73,9 +74,9 @@ echo "127.0.0.1 $(hostname)" | tee --append /etc/hosts
 
 
 # Vault
-sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $CONFIGDIR/vault.hcl
-cp $CONFIGDIR/vault.hcl $VAULTCONFIGDIR
-cp $CONFIGDIR/vault.service /etc/systemd/system/vault.service
+sed -i "s/IP_ADDRESS/$IP_ADDRESS/g" $OPS_CONFIG_DIR/vault.hcl
+cp $OPS_CONFIG_DIR/vault.hcl $VAULT_CONFIG_DIR
+cp $OPS_CONFIG_DIR/vault.service /etc/systemd/system/vault.service
 
 systemctl enable vault.service
 systemctl start vault.service
@@ -91,9 +92,9 @@ if [[ `wget -S --spider $NOMAD_BINARY  2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
   chown root:root /usr/local/bin/nomad
 fi
 
-sed -i "s/SERVER_COUNT/$SERVER_COUNT/g" $CONFIGDIR/nomad.hcl
-cp $CONFIGDIR/nomad.hcl $NOMADCONFIGDIR
-cp $CONFIGDIR/nomad.service /etc/systemd/system/nomad.service
+sed -i "s/SERVER_COUNT/$SERVER_COUNT/g" $OPS_CONFIG_DIR/nomad.hcl
+cp $OPS_CONFIG_DIR/nomad.hcl $NOMAD_CONFIG_DIR
+cp $OPS_CONFIG_DIR/nomad.service /etc/systemd/system/nomad.service
 
 systemctl enable nomad.service
 systemctl start nomad.service
@@ -102,8 +103,8 @@ export NOMAD_ADDR=http://$IP_ADDRESS:4646
 
 
 # Consul Template
-cp $CONFIGDIR/consul-template.hcl $CONSULTEMPLATECONFIGDIR/consul-template.hcl
-cp $CONFIGDIR/consul-template.service /etc/systemd/system/consul-template.service
+cp $OPS_CONFIG_DIR/consul-template.hcl $CONSULTEMPLATE_CONFIG_DIR/consul-template.hcl
+cp $OPS_CONFIG_DIR/consul-template.service /etc/systemd/system/consul-template.service
 
 
 # Add hostname to /etc/hosts
@@ -129,6 +130,7 @@ mkfs.xfs -i size=512 /dev/nvme1n1
 mkdir -p /data/brick1/gv0
 echo '/dev/nvme1n1 /data/brick1 xfs defaults 1 2' >> /etc/fstab
 mount -a
+mkdir $GLUSTER_MOUNT_DIR
 
 apt update && apt install -y glusterfs-server
 systemctl enable glusterd.service && systemctl start glusterd.service
@@ -153,21 +155,21 @@ then
     $(for i in $${SERVERS[@]}; do echo "$i:/data/brick1/gv0 "; done)
   gluster volume start gv0
   gluster volume info # for user-data log diagnostics
-  mount -t glusterfs "$NEW_HOSTNAME:/gv0" /mnt
-  mkdir $CONSULSHAREDDIR
+  mount -t glusterfs "$NEW_HOSTNAME:/gv0" $GLUSTER_MOUNT_DIR
+  mkdir $CONSUL_SHARED_DIR
   GOSSIP_ENCRYPTION_KEY=$(consul keygen)
-  sed -i "s@GOSSIP_ENCRYPTION_KEY@$GOSSIP_ENCRYPTION_KEY@g" $CONFIGDIR/consul_gossip_encrypt.hcl
-  cp $CONFIGDIR/consul_gossip_encrypt.hcl $CONSULSHAREDDIR
-  cp $CONFIGDIR/consul_gossip_encrypt.hcl $CONSULCONFIGDIR
+  sed -i "s@GOSSIP_ENCRYPTION_KEY@$GOSSIP_ENCRYPTION_KEY@g" $OPS_CONFIG_DIR/consul_gossip_encrypt.hcl
+  cp $OPS_CONFIG_DIR/consul_gossip_encrypt.hcl $CONSUL_SHARED_DIR
+  cp $OPS_CONFIG_DIR/consul_gossip_encrypt.hcl $CONSUL_CONFIG_DIR
   systemctl restart consul
 else
   sleep 15
-  mount -t glusterfs "$NEW_HOSTNAME:/gv0" /mnt
-  cp $CONSULSHAREDDIR/consul_gossip_encrypt.hcl $CONSULCONFIGDIR
+  mount -t glusterfs "$NEW_HOSTNAME:/gv0" $GLUSTER_MOUNT_DIR
+  cp $CONSUL_SHARED_DIR/consul_gossip_encrypt.hcl $CONSUL_CONFIG_DIR
   systemctl restart consul
 fi
 
 
 # Mount GlusterFS volume
-echo "$NEW_HOSTNAME:/gv0 /mnt glusterfs defaults,_netdev 0 0" >> /etc/fstab
+echo "$NEW_HOSTNAME:/gv0 $GLUSTER_MOUNT_DIR glusterfs defaults,_netdev 0 0" >> /etc/fstab
 mount -a || (sleep 30 && mount -a)
