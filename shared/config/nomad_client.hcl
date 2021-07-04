@@ -5,8 +5,7 @@ bind_addr = "0.0.0.0"
 client {
   enabled = true
   options {
-    "driver.raw_exec.enable" = "1"
-    "docker.privileged.enabled" = "true"
+    # "driver.raw_exec.enable" = "1"
   }
 }
 
@@ -17,4 +16,10 @@ consul {
 vault {
   enabled = true
   address = "http://active.vault.service.consul:8200"
+}
+
+plugin "docker" {
+  volumes {
+    enabled = "true"
+  }
 }
