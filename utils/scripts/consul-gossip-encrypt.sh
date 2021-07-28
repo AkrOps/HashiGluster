@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # This scripts enables Gossip encryption for all Consul agents.
-# It should be run from inside the Terraform environment.
+# It should be run from inside the Terraform environment and ssh access to the hosts is needed.
+# This process has already been integrated into the server and client user-data scripts.
 
 shopt -s expand_aliases
 CONFIG_FILE="/etc/consul.d/consul.hcl"
