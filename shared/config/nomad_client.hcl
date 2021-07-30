@@ -19,7 +19,9 @@ vault {
 }
 
 plugin "docker" {
-  volumes {
-    enabled = "true"
+  config {
+    volumes {
+      enabled = "true"
+    }
   }
 }
